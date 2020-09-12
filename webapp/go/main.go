@@ -199,7 +199,17 @@ func (r *RecordMapper) Err() error {
 	return r.err
 }
 
-func NewMySQLConnectionEnv() *MySQLConnectionEnv {
+func estateNewMySQLConnectionEnv() *MySQLConnectionEnv {
+	return &MySQLConnectionEnv{
+		Host:     getEnv("MYSQL_HOST", "10.165.2.102"),
+		Port:     getEnv("MYSQL_PORT", "3306"),
+		User:     getEnv("MYSQL_USER", "isucon"),
+		DBName:   getEnv("MYSQL_DBNAME", "isuumo"),
+		Password: getEnv("MYSQL_PASS", "isucon"),
+	}
+}
+
+func chairNewMySQLConnectionEnv() *MySQLConnectionEnv {
 	return &MySQLConnectionEnv{
 		Host:     getEnv("MYSQL_HOST", "10.165.2.102"),
 		Port:     getEnv("MYSQL_PORT", "3306"),
@@ -279,15 +289,23 @@ func main() {
 	e.GET("/api/estate/search/condition", getEstateSearchCondition)
 	e.GET("/api/recommended_estate/:id", searchRecommendedEstateWithChair)
 
-	mySQLConnectionData = NewMySQLConnectionEnv()
+	estateMySQLConnectionData := estateNewMySQLConnectionEnv()
+	chairMySQLConnectionData := chairNewMySQLConnectionEnv()
 
 	var err error
-	db, err = mySQLConnectionData.ConnectDB()
+	estateDB, err := estateMySQLConnectionData.ConnectDB()
 	if err != nil {
-		e.Logger.Fatalf("DB connection failed : %v", err)
+		e.Logger.Fatalf("estate DB connection failed : %v", err)
 	}
-	db.SetMaxOpenConns(10)
-	defer db.Close()
+	estateDB.SetMaxOpenConns(10)
+	defer estateDB.Close()
+
+	chairDB, err := chairMySQLConnectionData.ConnectDB()
+	if err != nil {
+		e.Logger.Fatalf("chair DB connection failed : %v", err)
+	}
+	chairDB.SetMaxOpenConns(10)
+	defer chairDB.Close()
 
 	// Start server
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_PORT", "1323"))
@@ -305,11 +323,11 @@ func initialize(c echo.Context) error {
 	for _, p := range paths {
 		sqlFile, _ := filepath.Abs(p)
 		cmdStr := fmt.Sprintf("mysql -h %v -u %v -p%v -P %v %v < %v",
-			mySQLConnectionData.Host,
-			mySQLConnectionData.User,
-			mySQLConnectionData.Password,
-			mySQLConnectionData.Port,
-			mySQLConnectionData.DBName,
+			estateMySQLConnectionData.Host,
+			estateMySQLConnectionData.User,
+			estateMySQLConnectionData.Password,
+			estateMySQLConnectionData.Port,
+			estateMySQLConnectionData.DBName,
 			sqlFile,
 		)
 		if err := exec.Command("bash", "-c", cmdStr).Run(); err != nil {
@@ -318,6 +336,21 @@ func initialize(c echo.Context) error {
 		}
 	}
 
+	for _, p := range paths {
+		sqlFile, _ := filepath.Abs(p)
+		cmdStr := fmt.Sprintf("mysql -h %v -u %v -p%v -P %v %v < %v",
+			chairMySQLConnectionData.Host,
+			chairMySQLConnectionData.User,
+			chairMySQLConnectionData.Password,
+			chairMySQLConnectionData.Port,
+			chairMySQLConnectionData.DBName,
+			sqlFile,
+		)
+		if err := exec.Command("bash", "-c", cmdStr).Run(); err != nil {
+			c.Logger().Errorf("Initialize script error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})
