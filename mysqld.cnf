@@ -44,7 +44,7 @@ bind-address            = *
 #
 # * Fine Tuning
 #
-key_buffer_size         = 16M
+key_buffer_size         = 100M
 max_allowed_packet      = 16M
 thread_stack            = 192K
 thread_cache_size       = 8
@@ -57,8 +57,8 @@ myisam-recover-options  = BACKUP
 #
 # * Query Cache Configuration
 #
-query_cache_limit       = 1M
-query_cache_size        = 16M
+query_cache_limit       = 10M
+query_cache_size        = 100M
 #
 # * Logging and Replication
 #
@@ -104,3 +104,6 @@ max_binlog_size   = 100M
 # ssl-cert=/etc/mysql/server-cert.pem
 # ssl-key=/etc/mysql/server-key.pem
 max_allowed_packet = 32505856
+
+innodb_buffer_pool_size = 1G
+innodb_log_file_size = 1G
