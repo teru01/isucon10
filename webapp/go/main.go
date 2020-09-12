@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -219,7 +220,16 @@ func getEnv(key, defaultValue string) string {
 //ConnectDB isuumoデータベースに接続する
 func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
-	return sqlx.Open("mysql", dsn)
+	var dbx *sqlx.DB
+	for {
+		var err error
+		dbx, err = sqlx.Connect("mysql", dsn)
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	return dbx, nil
 }
 
 func init() {
