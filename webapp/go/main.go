@@ -24,6 +24,9 @@ import (
 const Limit = 20
 const NazotteLimit = 50
 
+
+
+
 var db *sqlx.DB
 var mySQLConnectionData *MySQLConnectionEnv
 var chairSearchCondition ChairSearchCondition
@@ -48,6 +51,14 @@ type Chair struct {
 	Popularity  int64  `db:"popularity" json:"-"`
 	Stock       int64  `db:"stock" json:"-"`
 }
+
+
+var low_priced_chairs []Chair
+var max_price =0
+
+
+
+
 
 type ChairSearchResponse struct {
 	Count  int64   `json:"count"`
@@ -318,6 +329,26 @@ func initialize(c echo.Context) error {
 		}
 	}
 
+	var chairs []Chair
+
+	query := `SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT ?`
+	err := db.Select(&chairs, query, Limit)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.Logger().Error("getLowPricedChair not found")
+			return c.JSON(http.StatusOK, ChairListResponse{[]Chair{}})
+		}
+		c.Logger().Errorf("getLowPricedChair DB execution error : %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	for _, i := range low_priced_chairs {
+		if int64(i.Price) > int64(max_price) {
+			max_price = int(i.Price)
+		}
+    }
+	
+
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})
@@ -379,6 +410,19 @@ func postChair(c echo.Context) error {
 		description := rm.NextString()
 		thumbnail := rm.NextString()
 		price := rm.NextInt()
+		if(price>max_price){
+			max_price=price
+			query := `SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT ?`
+			err := db.Select(&low_priced_chairs, query, Limit)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					c.Logger().Error("getLowPricedChair not found")
+					return c.JSON(http.StatusOK, ChairListResponse{[]Chair{}})
+				}
+				c.Logger().Errorf("getLowPricedChair DB execution error : %v", err)
+				return c.NoContent(http.StatusInternalServerError)
+			}		
+		}
 		height := rm.NextInt()
 		width := rm.NextInt()
 		depth := rm.NextInt()
@@ -397,6 +441,9 @@ func postChair(c echo.Context) error {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
+
+
+	
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -583,6 +630,35 @@ func buyChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+
+
+		for _, i := range low_priced_chairs {
+			if (i.ID==int64(id)) {
+				i.Stock =i.Stock -1
+				if i.Stock==0{
+					query := `SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT ?`
+					err := db.Select(&low_priced_chairs, query, Limit)
+					if err != nil {
+						if err == sql.ErrNoRows {
+							c.Logger().Error("getLowPricedChair not found")
+							return c.JSON(http.StatusOK, ChairListResponse{[]Chair{}})
+						}
+						c.Logger().Errorf("getLowPricedChair DB execution error : %v", err)
+						return c.NoContent(http.StatusInternalServerError)
+					}
+				
+					for _, i := range low_priced_chairs {
+						if i.Price > int64(max_price) {
+							max_price = int(i.Price)
+						}
+					}
+
+				}
+			}
+		}
+		
+	
+
 	err = tx.Commit()
 	if err != nil {
 		c.Echo().Logger.Errorf("transaction commit error : %v", err)
@@ -597,9 +673,9 @@ func getChairSearchCondition(c echo.Context) error {
 }
 
 func getLowPricedChair(c echo.Context) error {
-	var chairs []Chair
+
 	query := `SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT ?`
-	err := db.Select(&chairs, query, Limit)
+	err := db.Select(&low_priced_chairs, query, Limit)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.Logger().Error("getLowPricedChair not found")
@@ -609,7 +685,7 @@ func getLowPricedChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, ChairListResponse{Chairs: chairs})
+	return c.JSON(http.StatusOK, ChairListResponse{Chairs: low_priced_chairs})
 }
 
 func getEstateDetail(c echo.Context) error {
