@@ -202,12 +202,17 @@ func (r *RecordMapper) Err() error {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func estateNewMySQLConnectionEnv() *MySQLConnectionEnv {
 	return &MySQLConnectionEnv{
 =======
 func estateNewMySQLConnectionEnv() *estateMySQLConnectionEnv {
 	return &estateMySQLConnectionEnv{
 >>>>>>> c2ba15c... シャーディング用にDBを分けるよう設定
+=======
+func estateNewMySQLConnectionEnv() *estateMySQLConnectionEnv {
+	return &estateMySQLConnectionEnv{
+>>>>>>> origin/sharding
 		Host:     getEnv("MYSQL_HOST", "10.165.2.102"),
 		Port:     getEnv("MYSQL_PORT", "3306"),
 		User:     getEnv("MYSQL_USER", "isucon"),
@@ -217,12 +222,17 @@ func estateNewMySQLConnectionEnv() *estateMySQLConnectionEnv {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func chairNewMySQLConnectionEnv() *MySQLConnectionEnv {
 	return &MySQLConnectionEnv{
 =======
 func chairNewMySQLConnectionEnv() *chairMySQLConnectionEnv {
 	return &chairMySQLConnectionEnv{
 >>>>>>> c2ba15c... シャーディング用にDBを分けるよう設定
+=======
+func chairNewMySQLConnectionEnv() *chairMySQLConnectionEnv {
+	return &chairMySQLConnectionEnv{
+>>>>>>> origin/sharding
 		Host:     getEnv("MYSQL_HOST", "10.165.2.102"),
 		Port:     getEnv("MYSQL_PORT", "3306"),
 		User:     getEnv("MYSQL_USER", "isucon"),
@@ -307,6 +317,7 @@ func main() {
 	// 2つのDBに接続
 	var err error
 <<<<<<< HEAD
+<<<<<<< HEAD
 	estateDB, err := estateMySQLConnectionData.ConnectDB()
 	if err != nil {
 		e.Logger.Fatalf("estate DB connection failed : %v", err)
@@ -321,6 +332,8 @@ func main() {
 	chairDB.SetMaxOpenConns(10)
 	defer chairDB.Close()
 =======
+=======
+>>>>>>> origin/sharding
 	estate, err := estateMySQLConnectionData.ConnectDB()
 	if err != nil {
 		e.Logger.Fatalf("estete DB connection failed : %v", err)
@@ -334,7 +347,10 @@ func main() {
 	}
 	chair.SetMaxOpenConns(10)
 	defer chair.Close()
+<<<<<<< HEAD
 >>>>>>> c2ba15c... シャーディング用にDBを分けるよう設定
+=======
+>>>>>>> origin/sharding
 
 	// Start server
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_PORT", "1323"))
@@ -359,7 +375,10 @@ func initialize(c echo.Context) error {
 			estateMySQLConnectionData.Port,
 			estateMySQLConnectionData.DBName,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/sharding
 			sqlFile,
 		)
 		if err := exec.Command("bash", "-c", cmdStr).Run(); err != nil {
@@ -375,7 +394,10 @@ func initialize(c echo.Context) error {
 			chairMySQLConnectionData.Password,
 			chairMySQLConnectionData.Port,
 			chairMySQLConnectionData.DBName,
+<<<<<<< HEAD
 >>>>>>> c2ba15c... シャーディング用にDBを分けるよう設定
+=======
+>>>>>>> origin/sharding
 			sqlFile,
 		)
 		if err := exec.Command("bash", "-c", cmdStr).Run(); err != nil {
